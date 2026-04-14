@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>RIVER STRID: Cap 1</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap');
+
+  :root{
+    --bg:#0a0a0f; --accent:#8a0000; --text:#e0e0e0; --muted:#777;
+    --lucas:#4a90e2; --sofia:#9b59b6;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --vh: 1vh; /* se actualiza por JS */
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html, body{
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',sans-serif;
+    overflow:hidden;
+    width:100%;
+    height: calc(var(--vh) * 100);
+    touch-action:none;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+    position:fixed;
+    inset:0;
+  }
+
+  #game-container{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height: calc(var(--vh) * 100);
+    background:var(--bg);
+    overflow:hidden;
+  }
+
+  /* No estirar todos los canvas. SOLO el principal. */
+  canvas{
+    display:block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  #game{ width:100%; height:100%; }
+
+  #scanlines{
+    position:absolute; inset:0;
+    background:
+      linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+      linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.015), rgba(0,0,255,0.03));
+    background-size: 100% 3px, 4px 100%;
+    pointer-events:none; z-index:10;
+  }
+
+  #vignette{
+    position:absolute; inset:0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+    pointer-events:none; z-index:11;
+  }
+
+  #controls-info{
+    position:absolute;
+    top:calc(10px + var(--safe-top));
+    left:50%; transform:translateX(-50%);
+    z-index:20;
+    background:rgba(0,0,0,0.7);
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:clamp(0.45rem, 1.3vw, 0.65rem);
+    color:#888;
+    font-family:'Press Start 2P', cursive;
+    white-space:nowrap;
+    max-width:92vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    backdrop-filter: blur(4px);
+  }
+
+  #hud{
+    position:absolute;
+    top:calc(10px + var(--safe-top));
+    left:10px;
+    z-index:20;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    pointer-events:none;
+  }
+  .label{
+    font-size: clamp(0.45rem, 1.5vw, 0.65rem);
+    color: var(--muted);
+    margin-bottom: 2px;
+    font-family: 'Press Start 2P', cursive;
+  }
+  .bar-wrap{
+    background:#111;
+    border:1px solid #333;
+    width:min(200px, 40vw);
+    height:10px;
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .bar{ height:100%; transition:width 0.2s ease; border-radius:4px; }
+  .bar.sens{
+    background: linear-gradient(90deg, #9b59b6, #ff6b81);
+    box-shadow: 0 0 8px rgba(155,89,182,0.5);
+  }
+
+  #char-indicator{
+    position:absolute;
+    top:calc(10px + var(--safe-top));
+    right:10px;
+    z-index:20;
+    background:rgba(17,17,17,0.9);
+    border:2px solid #333;
+    padding:6px 10px;
+    border-radius:6px;
+    font-family:'Press Start 2P', cursive;
+    font-size: clamp(0.5rem, 1.4vw, 0.65rem);
+    pointer-events:auto;
+    cursor:pointer;
+    backdrop-filter: blur(4px);
+  }
+  #char-indicator.lucas{ color:var(--lucas); border-color:var(--lucas); }
+  #char-indicator.sofia{ color:var(--sofia); border-color:var(--sofia); }
+
+  #minimap{
+    position:absolute;
+    top: calc(55px + var(--safe-top));
+    right:10px;
+    z-index:20;
+    pointer-events:none;
+    opacity:0.85;
+    border:1px solid #333;
+    border-radius:4px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  #inventory{
+    position:absolute;
+    bottom:calc(15px + var(--safe-bottom));
+    left:10px;
+    z-index:20;
+    display:flex;
+    gap:6px;
+    pointer-events:none;
+  }
+  .inv-slot{
+    width: clamp(30px, 7.5vw, 44px);
+    height: clamp(30px, 7.5vw, 44px);
+    background: rgba(17,17,17,0.85);
+    border: 2px solid #333;
+    border-radius: 6px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size: clamp(0.85rem, 3vw, 1.25rem);
+    color:#fff;
+    backdrop-filter: blur(4px);
+  }
+  .inv-slot.filled{
+    border-color: var(--accent);
+    background: rgba(34,0,0,0.85);
+    box-shadow: 0 0 8px rgba(138,0,0,0.35);
+  }
+
+  #dialogue-box{
+    position:absolute;
+    bottom:calc(70px + var(--safe-bottom));
+    left:50%;
+    transform: translateX(-50%);
+    width:min(92%, 650px);
+    background: rgba(10,10,15,0.96);
+    border:2px solid #444;
+    padding: 14px 16px 28px;
+    border-radius: 8px;
+    z-index:25;
+    display:none;
+    font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+    line-height:1.5;
+    min-height:70px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    cursor:pointer;
+  }
+  #dialogue-advance-hint{
+    position:absolute;
+    bottom:6px; right:12px;
+    color: var(--muted);
+    font-family:'Press Start 2P', cursive;
+    font-size: clamp(0.4rem, 1.2vw, 0.55rem);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  #proximity-indicator{
+    position:absolute;
+    bottom: calc(150px + var(--safe-bottom));
+    right:20px;
+    z-index:21;
+    display:none;
+    background: rgba(46,204,113,0.15);
+    border:1px solid rgba(46,204,113,0.4);
+    padding:6px 10px;
+    border-radius:20px;
+    font-family:'Press Start 2P', cursive;
+    font-size: clamp(0.4rem, 1.2vw, 0.55rem);
+    color: rgba(46,204,113,0.85);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Joystick */
+  #joystick-zone{
+    position:absolute;
+    bottom: calc(16px + var(--safe-bottom));
+    left: 16px;
+    width: clamp(110px, 30vw, 150px);
+    height: clamp(110px, 30vw, 150px);
+    z-index:22;
+    display:none;
+  }
+  #joystick-base{
+    position:absolute; inset:0;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+    border:2px solid rgba(255,255,255,0.15);
+    border-radius:50%;
+    backdrop-filter: blur(4px);
+  }
+  #joystick-thumb{
+    position:absolute;
+    width:40%; height:40%;
+    background: radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 100%);
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:50%;
+    top:50%; left:50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Botones */
+  #touch-controls{
+    position:absolute;
+    bottom: calc(18px + var(--safe-bottom));
+    right: 18px;
+    z-index:22;
+    display:none;
+  }
+  #action-buttons{ display:flex; gap:12px; align-items:center; }
+
+  .touch-btn{
+    width: clamp(52px, 13vw, 64px);
+    height: clamp(52px, 13vw, 64px);
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-family:'Press Start 2P', cursive;
+    font-size: clamp(0.6rem, 2vw, 0.8rem);
+    color: rgba(255,255,255,0.75);
+    backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .touch-btn.interact{ border-color: rgba(46,204,113,0.5); color: rgba(46,204,113,0.9); }
+  .touch-btn.switch-char{ border-color: rgba(155,89,182,0.5); color: rgba(155,89,182,0.9); }
+
+  /* Tutorial */
+  #tutorial{
+    position:absolute; inset:0;
+    background: rgba(0,0,0,0.86);
+    z-index:40;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:30px;
+    cursor:pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #tutorial h3{
+    font-family:'Press Start 2P', cursive;
+    color: var(--accent);
+    margin-bottom:1.2rem;
+    font-size: clamp(0.8rem, 3vw, 1.1rem);
+  }
+  #tutorial .tut-line{
+    color:var(--text);
+    font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+    margin:8px 0;
+    line-height:1.5;
+  }
+  #tutorial .tut-hint{
+    color:var(--muted);
+    font-size: clamp(0.55rem, 1.8vw, 0.8rem);
+    margin-top:1.6rem;
+    font-family:'Press Start 2P', cursive;
+    animation:pulse 2s infinite;
+  }
+
+  #rotate-hint{
+    position:absolute;
+    top: calc(85px + var(--safe-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display:none;
+    background: rgba(0,0,0,0.65);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-family:'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    color: #bbb;
+    backdrop-filter: blur(6px);
+    max-width: 92vw;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+
+    /* IMPORTANTE: no debe bloquear toques */
+    pointer-events: none;
+  }
+
+  /* End screen */
+  #end-screen{
+    position:absolute; inset:0;
+    background: var(--bg);
+    z-index:30;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:20px;
+  }
+
+  /* Ajustes Mobile */
+  .mobile #inventory{
+    bottom: calc(170px + var(--safe-bottom));
+    left: 16px;
+  }
+  .mobile #proximity-indicator{
+    bottom: calc(210px + var(--safe-bottom));
+    right: 16px;
+  }
+  /* En JSBin/ads, el diálogo puede quedar tapado: lo subimos en móvil */
+  .mobile #dialogue-box{
+    bottom: calc(240px + var(--safe-bottom));
+  }
+
+  @media (min-width: 769px){
+    #touch-controls, #joystick-zone{ display:none !important; }
+  }
+</style>
+</head>
+
+<body>
+<div id="game-container">
+  <canvas id="game"></canvas>
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+
+  <div id="controls-info">WASD: Mover | Q: Cambiar | E: Interactuar | F: Fullscreen</div>
+
+  <div id="hud">
+    <div>
+      <div class="label">SENSIBILIDAD</div>
+      <div class="bar-wrap"><div class="bar sens" id="sens-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div id="char-indicator" class="lucas">👤 LUCAS</div>
+  <canvas id="minimap" width="80" height="80"></canvas>
+
+  <div id="inventory">
+    <div class="inv-slot" id="slot0"></div>
+    <div class="inv-slot" id="slot1"></div>
+    <div class="inv-slot" id="slot2"></div>
+    <div class="inv-slot" id="slot3"></div>
+  </div>
+
+  <div id="proximity-indicator">❗ INTERACTUAR</div>
+
+  <div id="joystick-zone">
+    <div id="joystick-base"><div id="joystick-thumb"></div></div>
+  </div>
+
+  <div id="touch-controls">
+    <div id="action-buttons">
+      <button class="touch-btn switch-char" id="btn-switch" aria-label="Cambiar personaje">Q</button>
+      <button class="touch-btn interact" id="btn-interact" aria-label="Interactuar">E</button>
+    </div>
+  </div>
+
+  <div id="dialogue-box">
+    <div id="dialogue-text"></div>
+    <div id="dialogue-advance-hint">TAP ▶</div>
+  </div>
+
+  <div id="end-screen">
+    <h2 style="font-family:'Press Start 2P',cursive;color:#8a0000;margin-bottom:1rem;font-size:clamp(0.8rem, 3vw, 1.2rem);">CAPÍTULO 1 COMPLETADO</h2>
+    <p style="color:#777;max-width:500px;margin:0 auto 2rem;font-size:clamp(0.75rem,2.5vw,0.95rem);line-height:1.6;">
+      La casa guarda más secretos. Álex sigue esperando.<br>¿Continuarás en el Capítulo 2?
+    </p>
+    <button style="background:#8a0000;color:#fff;border:none;padding:14px 28px;font-family:'Press Start 2P',cursive;font-size:clamp(0.6rem,2vw,0.8rem);cursor:pointer;border-radius:6px;"
+            onclick="location.reload()">REINICIAR</button>
+  </div>
+
+  <div id="tutorial">
+    <h3>🏚️ RIVER STRID</h3>
+    <div class="tut-line">🕹️ <b>Joystick</b> izquierdo para mover</div>
+    <div class="tut-line">🔄 Botón <b>Q</b> para cambiar personaje</div>
+    <div class="tut-line">👆 Botón <b>E</b> para interactuar</div>
+    <div class="tut-line">Toca para comenzar (y activar pantalla completa si se puede)</div>
+    <div class="tut-hint">— TOCA PARA COMENZAR —</div>
+  </div>
+
+  <div id="rotate-hint">Mejor en horizontal (landscape). Igual puedes jugar en vertical.</div>
+</div>
+
+<script>
+/* =========================================================
+   VIEWPORT FIX (móviles)
+========================================================= */
+function setVhVar(){
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
+}
+setVhVar();
+
+/* =========================================================
+   CONFIG + CANVAS
+========================================================= */
+const BASE_TILE_W = 64, BASE_TILE_H = 32;
+const MAP_COLS = 12, MAP_ROWS = 12;
+const MOVE_SPEED = 0.06;
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const minimapCanvas = document.getElementById('minimap');
+const minimapCtx = minimapCanvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+minimapCtx.imageSmoothingEnabled = false;
+
+let width = 0, height = 0;
+let isMobile = false;
+let lastTime = 0;
+
+const view = {
+  zoom: 1,
+  tileW: BASE_TILE_W,
+  tileH: BASE_TILE_H
+};
+
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+/* =========================================================
+   MAPA
+========================================================= */
+const map = [
+  [1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,3,3,0,0,0,0,2,0,0,1],
+  [1,0,3,3,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,1,1,0,0,0,0,1],
+  [1,0,0,0,0,1,1,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,2,0,1],
+  [1,0,2,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,3,3,0,0,1],
+  [1,0,0,0,0,0,0,3,3,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1]
+];
+
+/* =========================================================
+   INTERACTUABLES
+========================================================= */
+const interactables = [
+  { x:2, y:2, type:'photo', name:'Foto Campamento', icon:'📸', taken:false, char:'Lucas',
+    dialog:['Lucas: "River Strid, último verano"... está escrita al dorso.',
+            'Lucas: Reconozco a Álex en la foto. Y a alguien más...'] },
+  { x:8, y:2, type:'diary', name:'Diario Viejo', icon:'📖', taken:false, char:'Lucas',
+    dialog:['Lucas: Un diario... las páginas están arrancadas.',
+            'Lucas: Solo queda una entrada: "No vayas al río de noche."'] },
+  { x:2, y:8, type:'whisper', name:'Rincón Oscuro', icon:'👁️', char:'Sofía',
+    dialog:['Sofía: (cierra los ojos)... escucho... pasos...',
+            'Sofía: "Cabaña... madera quemada... él sigue aquí..."',
+            'Sofía: ¡No! Se fue... pero dejó algo. Busca en el suelo, Lucas.'] },
+  { x:9, y:7, type:'whisper', name:'Ventana Rota', icon:'🌀', char:'Sofía',
+    dialog:['Sofía: El viento... no es viento. Algo respira del otro lado.',
+            'Sofía: "Campamento... ve al campamento antes del amanecer..."'] },
+  { x:7, y:9, type:'key', name:'Llave Oxidada', icon:'🔑', taken:false, char:'Lucas',
+    dialog:['Lucas: Una llave vieja debajo de la alfombra.',
+            'Lucas: Tiene grabado "R.S." ... River Strid.'] },
+  { x:10, y:10, type:'door', name:'Puerta Principal', icon:'🚪', char:'Any',
+    dialog:['Sofía: "Álex quiere que vayamos al campamento."',
+            'Lucas: "Necesitamos la foto y la llave para salir."'] }
+];
+
+/* =========================================================
+   PLAYER + STATE
+   CORRECCIÓN: spawn en una casilla CAMINABLE
+   (antes 5,5 era pared y quedabas atrapado)
+========================================================= */
+const player = {
+  x: 4, y: 6,  // <- caminable
+  char:'Lucas',
+  inventory:[],
+  sensitivity:0,
+  flashlight:true,
+  facing:{x:0,y:1},
+  walkFrame:0,
+  isMoving:false
+};
+
+const camera = { x:0, y:0, shake:0 };
+
+const state = {
+  running:true,
+  dialogueActive:false,
+  dialogueQueue:[],
+  dialogueIndex:0,
+  chapterEnded:false,
+  keys:{},
+  nearInteractable:null,
+  ambientTimer:0,
+  typewriter: { interval:null, done:true, fullText:"" }
+};
+
+/* =========================================================
+   FIX SPAWN (verificación automática)
+========================================================= */
+function isWalkableTile(tx, ty){
+  if (tx < 0 || ty < 0 || tx >= MAP_COLS || ty >= MAP_ROWS) return false;
+  return map[ty][tx] !== 1;
+}
+
+function fixSpawnIfBlocked(){
+  const tx = Math.floor(player.x);
+  const ty = Math.floor(player.y);
+
+  if (isWalkableTile(tx, ty)) return;
+
+  for (let r = 1; r <= 8; r++){
+    for (let oy = -r; oy <= r; oy++){
+      for (let ox = -r; ox <= r; ox++){
+        const nx = tx + ox;
+        const ny = ty + oy;
+        if (isWalkableTile(nx, ny)){
+          player.x = nx + 0.01;
+          player.y = ny + 0.01;
+          camera.x = player.x;
+          camera.y = player.y;
+          console.warn("[SpawnFix] Player estaba en pared, movido a:", nx, ny);
+          return;
+        }
+      }
+    }
+  }
+  console.warn("[SpawnFix] No se encontró casilla caminable cercana.");
+}
+
+/* =========================================================
+   SPRITE LUCAS (tu URL)
+========================================================= */
+const LUCAS_SPRITE_URL =
+  "https://res.cloudinary.com/dcqnjn6fe/image/upload/v1776104806/1776104640ded6_x6tnax.png";
+
+const LUCAS_COLS = 10;
+const LUCAS_ROWS = 3;
+
+const lucasSprite = {
+  img: new Image(),
+  ready: false,
+  cols: LUCAS_COLS,
+  rows: LUCAS_ROWS,
+  frameW: 0,
+  frameH: 0,
+  scale: 0.55,
+  anchorYFactor: 0.92
+};
+
+lucasSprite.img.crossOrigin = "anonymous";
+lucasSprite.img.src = LUCAS_SPRITE_URL;
+lucasSprite.img.onload = () => {
+  lucasSprite.ready = true;
+  lucasSprite.frameW = lucasSprite.img.naturalWidth / lucasSprite.cols;
+  lucasSprite.frameH = lucasSprite.img.naturalHeight / lucasSprite.rows;
+  updateViewScale();
+
+  if (!Number.isInteger(lucasSprite.frameW) || !Number.isInteger(lucasSprite.frameH)){
+    console.warn("[Lucas sheet] Grid no cuadra con 10x3. Ajusta COLS/ROWS.");
+  }
+};
+
+function lucasFrame(col,row){ return row*lucasSprite.cols + col; }
+
+const LUCAS_ANIM = {
+  walkSide: [lucasFrame(0,0),lucasFrame(1,0),lucasFrame(2,0),lucasFrame(3,0),lucasFrame(4,0)],
+  idleSide: lucasFrame(2,0),
+  walkUp:   [lucasFrame(5,0),lucasFrame(6,0),lucasFrame(7,0),lucasFrame(8,0),lucasFrame(9,0)],
+  idleUp:   lucasFrame(7,0),
+  walkDown: [lucasFrame(0,1),lucasFrame(1,1),lucasFrame(2,1),lucasFrame(3,1),lucasFrame(4,1)],
+  idleDown: lucasFrame(2,1)
+};
+
+function drawSpriteFrame(asset, frameIndex, x, y, flipX=false){
+  if (!asset.ready) return;
+
+  const sx = (frameIndex % asset.cols) * asset.frameW;
+  const sy = Math.floor(frameIndex / asset.cols) * asset.frameH;
+
+  const dw = asset.frameW * asset.scale;
+  const anchorY = asset.frameH * asset.anchorYFactor;
+
+  ctx.save();
+  ctx.translate(x,y);
+  if (flipX) ctx.scale(-1,1);
+
+  ctx.drawImage(asset.img, sx, sy, asset.frameW, asset.frameH,
+                -dw/2, -anchorY*asset.scale, dw, asset.frameH*asset.scale);
+  ctx.restore();
+}
+
+function selectLucasAnimFrame(){
+  const fx = player.facing.x;
+  const fy = player.facing.y;
+
+  let dir = "down";
+  if (Math.abs(fx) > Math.abs(fy)) dir = fx >= 0 ? "right" : "left";
+  else dir = fy >= 0 ? "down" : "up";
+
+  const moving = player.isMoving;
+  const t = Math.floor(player.walkFrame) % 5;
+
+  if (!moving){
+    if (dir==="up") return {frame:LUCAS_ANIM.idleUp, flip:false};
+    if (dir==="left") return {frame:LUCAS_ANIM.idleSide, flip:true};
+    if (dir==="right") return {frame:LUCAS_ANIM.idleSide, flip:false};
+    return {frame:LUCAS_ANIM.idleDown, flip:false};
+  }
+
+  if (dir==="up") return {frame:LUCAS_ANIM.walkUp[t], flip:false};
+  if (dir==="left") return {frame:LUCAS_ANIM.walkSide[t], flip:true};
+  if (dir==="right") return {frame:LUCAS_ANIM.walkSide[t], flip:false};
+  return {frame:LUCAS_ANIM.walkDown[t], flip:false};
+}
+
+/* =========================================================
+   DETECT / RESIZE
+========================================================= */
+function updateViewScale(){
+  const base = Math.min(width, height);
+  const portrait = height > width;
+  let z = base / 720;
+  z = clamp(z, portrait ? 0.62 : 0.72, 1.0);
+
+  view.zoom = z;
+  view.tileW = BASE_TILE_W * view.zoom;
+  view.tileH = BASE_TILE_H * view.zoom;
+
+  // ligar escala sprite al zoom
+  lucasSprite.scale = 0.55 * view.zoom;
+}
+
+function detectMobile(){
+  isMobile = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 900));
+  document.body.classList.toggle('mobile', isMobile);
+
+  const joystickEl = document.getElementById('joystick-zone');
+  const touchCtrl = document.getElementById('touch-controls');
+  const ctrlInfo = document.getElementById('controls-info');
+  const tutorial = document.getElementById('tutorial');
+
+  if (isMobile){
+    joystickEl.style.display = 'block';
+    touchCtrl.style.display = 'block';
+    ctrlInfo.style.display = 'none';
+    tutorial.style.display = 'flex';
+    document.getElementById('dialogue-advance-hint').textContent = 'TAP ▶';
+  } else {
+    joystickEl.style.display = 'none';
+    touchCtrl.style.display = 'none';
+    ctrlInfo.style.display = 'block';
+    document.getElementById('dialogue-advance-hint').textContent = 'E ▶';
+  }
+
+  const rotateHint = document.getElementById('rotate-hint');
+  const portrait = window.innerHeight > window.innerWidth;
+  rotateHint.style.display = (isMobile && portrait) ? 'block' : 'none';
+}
+
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+  width = Math.floor(vw);
+  height = Math.floor(vh);
+
+  canvas.width = Math.floor(width * dpr);
+  canvas.height = Math.floor(height * dpr);
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const mmSize = isMobile ? 68 : 86;
+  minimapCanvas.width = mmSize;
+  minimapCanvas.height = mmSize;
+  minimapCanvas.style.width = mmSize + 'px';
+  minimapCanvas.style.height = mmSize + 'px';
+
+  updateViewScale();
+}
+
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', () => { setVhVar(); resize(); });
+  window.visualViewport.addEventListener('scroll', () => { setVhVar(); resize(); });
+}
+window.addEventListener('resize', () => { setVhVar(); detectMobile(); resize(); });
+window.addEventListener('orientationchange', () => setTimeout(() => { setVhVar(); detectMobile(); resize(); }, 200));
+
+/* =========================================================
+   JOYSTICK
+========================================================= */
+const joystick = { active:false, touchId:null, dx:0, dy:0 };
+
+function initJoystick(){
+  const zone = document.getElementById('joystick-zone');
+  const thumb = document.getElementById('joystick-thumb');
+
+  function resetThumb(){
+    joystick.dx=0; joystick.dy=0;
+    thumb.style.left='50%'; thumb.style.top='50%';
+  }
+
+  zone.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    if (joystick.active) return;
+    const t = e.changedTouches[0];
+    joystick.active=true;
+    joystick.touchId=t.identifier;
+    const rect=zone.getBoundingClientRect();
+    updateJoystickPosition(t.clientX,t.clientY,thumb,rect);
+  },{passive:false});
+
+  zone.addEventListener('touchmove',(e)=>{
+    e.preventDefault();
+    for (const t of e.changedTouches){
+      if (t.identifier===joystick.touchId){
+        const rect=zone.getBoundingClientRect();
+        updateJoystickPosition(t.clientX,t.clientY,thumb,rect);
+      }
+    }
+  },{passive:false});
+
+  zone.addEventListener('touchend',(e)=>{
+    for (const t of e.changedTouches){
+      if (t.identifier===joystick.touchId){
+        joystick.active=false; joystick.touchId=null;
+        resetThumb();
+      }
+    }
+  });
+
+  zone.addEventListener('touchcancel',()=>{
+    joystick.active=false; joystick.touchId=null;
+    resetThumb();
+  });
+}
+
+function updateJoystickPosition(x,y,thumb,rect){
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  let dx = x - cx;
+  let dy = y - cy;
+  const dist = Math.hypot(dx,dy);
+  const maxR = rect.width/2 * 0.55;
+  if (dist>maxR){ dx = (dx/dist)*maxR; dy=(dy/dist)*maxR; }
+
+  joystick.dx = dx/maxR;
+  joystick.dy = dy/maxR;
+  if (Math.abs(joystick.dx) < 0.15) joystick.dx = 0;
+  if (Math.abs(joystick.dy) < 0.15) joystick.dy = 0;
+
+  thumb.style.left = (50 + (dx/rect.width)*100) + '%';
+  thumb.style.top  = (50 + (dy/rect.height)*100) + '%';
+}
+
+/* =========================================================
+   INPUT TECLADO + FULLSCREEN
+========================================================= */
+async function tryFullscreen(){
+  try{
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+    }
+    if (screen.orientation && screen.orientation.lock) {
+      try { await screen.orientation.lock('landscape'); } catch(e){}
+    }
+  }catch(e){}
+}
+
+window.addEventListener('keydown',(e)=>{
+  const key = e.key.toLowerCase();
+  state.keys[key]=true;
+
+  if (key==='e'){
+    if (state.dialogueActive) advanceDialogue();
+    else handleInteract();
+  }
+  if (key==='q' && !state.dialogueActive) switchCharacter();
+  if (key==='f') tryFullscreen();
+});
+window.addEventListener('keyup',(e)=> state.keys[e.key.toLowerCase()] = false);
+
+/* =========================================================
+   BOTONES / TUTORIAL
+========================================================= */
+function initTouchButtons(){
+  const btnInteract = document.getElementById('btn-interact');
+  const btnSwitch = document.getElementById('btn-switch');
+  const dialogueBox = document.getElementById('dialogue-box');
+  const charIndicator = document.getElementById('char-indicator');
+  const tutorial = document.getElementById('tutorial');
+
+  btnInteract.addEventListener('touchstart',(e)=>{
+    e.preventDefault(); e.stopPropagation();
+    if (state.dialogueActive) advanceDialogue();
+    else handleInteract();
+  },{passive:false});
+
+  btnSwitch.addEventListener('touchstart',(e)=>{
+    e.preventDefault(); e.stopPropagation();
+    if (!state.dialogueActive) switchCharacter();
+  },{passive:false});
+
+  dialogueBox.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    if (state.dialogueActive) advanceDialogue();
+  },{passive:false});
+  dialogueBox.addEventListener('click',()=> { if (state.dialogueActive) advanceDialogue(); });
+
+  charIndicator.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    if (!state.dialogueActive) switchCharacter();
+  },{passive:false});
+  charIndicator.addEventListener('click',()=> { if (!state.dialogueActive) switchCharacter(); });
+
+  tutorial.addEventListener('touchstart', async (e)=>{
+    e.preventDefault();
+    tutorial.style.display='none';
+    await tryFullscreen();
+    startGame();
+  },{passive:false});
+  tutorial.addEventListener('click', async ()=>{
+    tutorial.style.display='none';
+    await tryFullscreen();
+    startGame();
+  });
+
+  /* Verificación extra: si el diálogo está activo, tocar el juego también avanza.
+     (útil si un overlay/ads tapa el diálogo en JSBin) */
+  canvas.addEventListener('touchstart', (e)=>{
+    if (state.dialogueActive){
+      e.preventDefault();
+      advanceDialogue();
+    }
+  }, {passive:false});
+  canvas.addEventListener('click', ()=>{
+    if (state.dialogueActive) advanceDialogue();
+  });
+}
+
+/* =========================================================
+   UI: personaje / inventario
+========================================================= */
+function switchCharacter(){
+  player.char = player.char === 'Lucas' ? 'Sofía' : 'Lucas';
+  const ci = document.getElementById('char-indicator');
+  if (player.char==='Lucas'){
+    ci.className='lucas'; ci.textContent='👤 LUCAS';
+  } else {
+    ci.className='sofia'; ci.textContent='👩 SOFÍA';
+  }
+}
+
+function addToInventory(name){
+  if (player.inventory.length < 4 && !player.inventory.includes(name)){
+    player.inventory.push(name);
+    updateInventoryUI();
+  }
+}
+function updateInventoryUI(){
+  for (let i=0;i<4;i++){
+    const slot = document.getElementById(`slot${i}`);
+    if (player.inventory[i]){
+      const item = interactables.find(x=>x.name===player.inventory[i]);
+      slot.innerHTML = item ? item.icon : '📦';
+      slot.className = 'inv-slot filled';
+      slot.title = player.inventory[i];
+    } else {
+      slot.innerHTML = '';
+      slot.className = 'inv-slot';
+      slot.title = '';
+    }
+  }
+}
+
+/* =========================================================
+   DIÁLOGO
+========================================================= */
+function showDialogue(texts){
+  state.dialogueActive=true;
+  state.dialogueQueue=texts;
+  state.dialogueIndex=0;
+  document.getElementById('dialogue-box').style.display='block';
+  updateDialogueText();
+}
+function completeCurrentLineIfTyping(){
+  if (state.typewriter.interval && !state.typewriter.done){
+    clearInterval(state.typewriter.interval);
+    state.typewriter.interval=null;
+    state.typewriter.done=true;
+    document.getElementById('dialogue-text').textContent = state.typewriter.fullText;
+    return true;
+  }
+  return false;
+}
+function advanceDialogue(){
+  if (completeCurrentLineIfTyping()) return;
+
+  state.dialogueIndex++;
+  if (state.dialogueIndex >= state.dialogueQueue.length){
+    state.dialogueActive=false;
+    document.getElementById('dialogue-box').style.display='none';
+    checkChapterEnd();
+  } else updateDialogueText();
+}
+function updateDialogueText(){
+  const text = state.dialogueQueue[state.dialogueIndex];
+  const el = document.getElementById('dialogue-text');
+  if (state.typewriter.interval) clearInterval(state.typewriter.interval);
+  el.textContent='';
+  state.typewriter.done=false;
+  state.typewriter.fullText=text;
+
+  let i=0;
+  state.typewriter.interval=setInterval(()=>{
+    if (i<text.length) el.textContent += text[i++];
+    else {
+      clearInterval(state.typewriter.interval);
+      state.typewriter.interval=null;
+      state.typewriter.done=true;
+    }
+  }, 18);
+}
+
+/* =========================================================
+   INTERACCIÓN
+========================================================= */
+function getNearInteractable(){
+  return interactables.find(obj=>{
+    if (obj.taken && (obj.type==='photo' || obj.type==='diary' || obj.type==='key')) return false;
+    return Math.abs(player.x-obj.x)<=1.2 && Math.abs(player.y-obj.y)<=1.2;
+  });
+}
+function handleInteract(){
+  const target = getNearInteractable();
+  if (!target) return;
+
+  if (target.char !== 'Any' && target.char !== player.char){
+    showDialogue([`Necesitas a ${target.char} para interactuar con esto.`]);
+    return;
+  }
+
+  if (target.type==='door'){
+    const hasPhoto = player.inventory.includes('Foto Campamento');
+    const hasKey = player.inventory.includes('Llave Oxidada');
+    if (hasPhoto && hasKey){
+      state.chapterEnded=true;
+      showDialogue([
+        'Sofía: "Tenemos todo. Es hora de ir al campamento."',
+        'Lucas: "Álex nos espera. Pero tengo un mal presentimiento..."',
+        'Sofía: "River Strid... el río que nunca devuelve lo que se traga."'
+      ]);
+    } else {
+      const missing=[];
+      if (!hasPhoto) missing.push('la foto');
+      if (!hasKey) missing.push('la llave');
+      showDialogue([`Lucas: Necesitamos ${missing.join(' y ')} para poder salir.`]);
+    }
+    return;
+  }
+
+  if ((target.type==='photo' || target.type==='diary' || target.type==='key') && !target.taken){
+    target.taken=true;
+    addToInventory(target.name);
+  }
+  showDialogue(target.dialog);
+}
+
+function checkChapterEnd(){
+  if (state.chapterEnded){
+    setTimeout(()=>{
+      document.getElementById('end-screen').style.display='flex';
+      state.running=false;
+    }, 1000);
+  }
+}
+
+/* =========================================================
+   COLISIÓN
+========================================================= */
+function canMoveTo(x,y){
+  const pad=0.25;
+  const checks=[
+    {cx:x-pad, cy:y-pad},
+    {cx:x+pad, cy:y-pad},
+    {cx:x-pad, cy:y+pad},
+    {cx:x+pad, cy:y+pad}
+  ];
+  for (const c of checks){
+    const gx=Math.floor(c.cx), gy=Math.floor(c.cy);
+    if (gx<0||gx>=MAP_COLS||gy<0||gy>=MAP_ROWS) return false;
+    if (map[gy][gx]===1) return false;
+  }
+  return true;
+}
+
+/* =========================================================
+   UPDATE
+========================================================= */
+function update(dt){
+  if (!state.running || state.dialogueActive) return;
+
+  let dx=0, dy=0;
+
+  if (state.keys['w']||state.keys['arrowup']) dy=-1;
+  if (state.keys['s']||state.keys['arrowdown']) dy= 1;
+  if (state.keys['a']||state.keys['arrowleft']) dx=-1;
+  if (state.keys['d']||state.keys['arrowright']) dx= 1;
+
+  if (joystick.active){ dx=joystick.dx; dy=joystick.dy; }
+
+  const mag=Math.hypot(dx,dy);
+  if (mag>0){ dx/=mag; dy/=mag; }
+
+  const speed=MOVE_SPEED*dt*60;
+  player.isMoving = mag>0;
+
+  if (dx||dy){
+    player.facing.x=dx; player.facing.y=dy;
+
+    const nx=player.x+dx*speed;
+    const ny=player.y+dy*speed;
+
+    if (canMoveTo(nx, player.y)) player.x=nx;
+    if (canMoveTo(player.x, ny)) player.y=ny;
+
+    player.walkFrame += dt*10;
+  }
+
+  // cámara
+  const lerp = 1 - Math.pow(0.001, dt);
+  camera.x += (player.x - camera.x) * lerp;
+  camera.y += (player.y - camera.y) * lerp;
+  camera.x = clamp(camera.x, 1, MAP_COLS-2);
+  camera.y = clamp(camera.y, 1, MAP_ROWS-2);
+
+  // proximidad
+  const near = getNearInteractable();
+  state.nearInteractable=near;
+  const proxEl=document.getElementById('proximity-indicator');
+  if (near){
+    proxEl.style.display='block';
+    const canUse = near.char==='Any' || near.char===player.char;
+    proxEl.textContent = canUse ? `❗ ${near.name}` : `🔒 Necesita ${near.char}`;
+    proxEl.style.borderColor = canUse ? 'rgba(46,204,113,0.4)' : 'rgba(231,76,60,0.4)';
+    proxEl.style.color = canUse ? 'rgba(46,204,113,0.85)' : 'rgba(231,76,60,0.85)';
+  } else proxEl.style.display='none';
+
+  // sensibilidad
+  if (player.char==='Sofía'){
+    const nearWhisper = interactables.find(i => i.type==='whisper' && Math.hypot(player.x-i.x, player.y-i.y) < 2.5);
+    if (nearWhisper){
+      const dist=Math.hypot(player.x-nearWhisper.x, player.y-nearWhisper.y);
+      const intensity=1-(dist/2.5);
+      player.sensitivity = Math.min(100, player.sensitivity + intensity*dt*30);
+    } else player.sensitivity = Math.max(0, player.sensitivity - dt*10);
+  } else {
+    player.sensitivity = Math.max(0, player.sensitivity - dt*25);
+  }
+  document.getElementById('sens-bar').style.width = `${player.sensitivity}%`;
+
+  state.ambientTimer += dt;
+}
+
+/* =========================================================
+   ISOMETRIC / DRAW
+========================================================= */
+function isoProject(worldX, worldY){
+  const relX = worldX - camera.x;
+  const relY = worldY - camera.y;
+  const screenX = (relX - relY) * (view.tileW/2) + width/2;
+  const screenY = (relX + relY) * (view.tileH/2) + height/2;
+  return { x: screenX, y: screenY };
+}
+
+function drawIsoDiamond(sx,sy,w,h,fill,stroke){
+  ctx.beginPath();
+  ctx.moveTo(sx, sy - h/2);
+  ctx.lineTo(sx + w/2, sy);
+  ctx.lineTo(sx, sy + h/2);
+  ctx.lineTo(sx - w/2, sy);
+  ctx.closePath();
+  if (fill){ ctx.fillStyle=fill; ctx.fill(); }
+  if (stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.stroke(); }
+}
+
+function drawFloorTile(sx,sy,type){
+  let color, stroke;
+  switch(type){
+    case 0: color='#1a1a24'; stroke='#252530'; break;
+    case 2: color='#151520'; stroke='#1e1e2a'; break;
+    case 3: color='#2a1a1a'; stroke='#3a2525'; break;
+    default: color='#1a1a24'; stroke='#222';
+  }
+  drawIsoDiamond(sx,sy, view.tileW, view.tileH, color, stroke);
+}
+
+function drawWall(sx,sy){
+  const wallH = view.tileH * 2;
+
+  ctx.fillStyle='#2c3e50';
+  ctx.beginPath();
+  ctx.moveTo(sx - view.tileW/2, sy);
+  ctx.lineTo(sx, sy + view.tileH/2);
+  ctx.lineTo(sx, sy + view.tileH/2 - wallH);
+  ctx.lineTo(sx - view.tileW/2, sy - wallH);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle='#1e2d3a';
+  ctx.beginPath();
+  ctx.moveTo(sx, sy + view.tileH/2);
+  ctx.lineTo(sx + view.tileW/2, sy);
+  ctx.lineTo(sx + view.tileW/2, sy - wallH);
+  ctx.lineTo(sx, sy + view.tileH/2 - wallH);
+  ctx.closePath();
+  ctx.fill();
+
+  drawIsoDiamond(sx, sy - wallH, view.tileW, view.tileH, '#34495e', '#445566');
+}
+
+function drawInteractableObj(obj){
+  if (obj.taken) return;
+  const pos = isoProject(obj.x+0.5, obj.y+0.5);
+  const bob = Math.sin(state.ambientTimer*3 + obj.x*2)*3;
+
+  ctx.save();
+  ctx.translate(pos.x, pos.y - 15 + bob);
+
+  const near = state.nearInteractable === obj;
+  if (near){
+    ctx.shadowColor =
+      obj.type==='whisper' ? '#9b59b6' :
+      obj.type==='door' ? '#2ecc71' : '#e67e22';
+    ctx.shadowBlur = 14;
+  }
+
+  const colors = {photo:'#e67e22', diary:'#3498db', whisper:'#9b59b6', door:'#2ecc71', key:'#f1c40f'};
+  const c = colors[obj.type] || '#888';
+
+  ctx.globalAlpha = near ? 1 : 0.75;
+  drawIsoDiamond(0,0, 20*view.zoom, 12*view.zoom, c, near ? '#fff' : null);
+
+  ctx.globalAlpha = 1;
+  ctx.font = `${near ? 16 : 14}px sans-serif`;
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.shadowBlur=0;
+  ctx.fillText(obj.icon || '?', 0, -1);
+
+  ctx.restore();
+}
+
+function drawPlayerCharacter(){
+  const pos = isoProject(player.x+0.5, player.y+0.5);
+  const bob = player.isMoving ? Math.sin(player.walkFrame)*2 : 0;
+
+  // sombra
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 12*view.zoom, 14*view.zoom, 6*view.zoom, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  // Lucas sprite
+  if (player.char==='Lucas' && lucasSprite.ready){
+    const sel = selectLucasAnimFrame();
+    drawSpriteFrame(lucasSprite, sel.frame, pos.x, pos.y + 8*view.zoom + bob, sel.flip);
+    return;
+  }
+
+  // fallback simple
+  ctx.save();
+  ctx.translate(pos.x, pos.y - 20*view.zoom + bob);
+  ctx.fillStyle = player.char==='Lucas' ? '#4a90e2' : '#9b59b6';
+  ctx.fillRect(-8*view.zoom, -16*view.zoom, 16*view.zoom, 20*view.zoom);
+  ctx.restore();
+}
+
+function drawFlashlightEffect(){
+  if (player.char !== 'Lucas' || !player.flashlight){
+    const grad = ctx.createRadialGradient(width/2, height/2, 60, width/2, height/2, 280);
+    grad.addColorStop(0, 'rgba(155,89,182,0.03)');
+    grad.addColorStop(0.5, 'rgba(0,0,0,0.4)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.88)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,width,height);
+    return;
+  }
+
+  const a = Math.atan2(player.facing.y, player.facing.x);
+  const lx = width/2 + Math.cos(a)*30;
+  const ly = height/2 + Math.sin(a)*15;
+  const grad = ctx.createRadialGradient(lx, ly-10, 30, lx, ly-10, 170);
+  grad.addColorStop(0, 'rgba(255,255,220,0.12)');
+  grad.addColorStop(0.4, 'rgba(255,255,200,0.05)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.9)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,width,height);
+}
+
+function drawMinimap(){
+  const mmW=minimapCanvas.width, mmH=minimapCanvas.height;
+  const tileSize=Math.min(mmW/MAP_COLS, mmH/MAP_ROWS);
+
+  minimapCtx.clearRect(0,0,mmW,mmH);
+  minimapCtx.fillStyle='rgba(0,0,0,0.7)';
+  minimapCtx.fillRect(0,0,mmW,mmH);
+
+  for (let y=0;y<MAP_ROWS;y++){
+    for (let x=0;x<MAP_COLS;x++){
+      const v = map[y][x];
+      minimapCtx.fillStyle = (v===1) ? '#2c3e50' : (v===3 ? '#2a1a1a' : '#1a1a24');
+      minimapCtx.fillRect(x*tileSize, y*tileSize, tileSize-0.5, tileSize-0.5);
+    }
+  }
+
+  interactables.forEach(obj=>{
+    if (obj.taken) return;
+    minimapCtx.fillStyle = obj.type==='whisper' ? '#9b59b6' : (obj.type==='door' ? '#2ecc71' : '#e67e22');
+    minimapCtx.fillRect(obj.x*tileSize+1, obj.y*tileSize+1, tileSize-2, tileSize-2);
+  });
+
+  minimapCtx.fillStyle = player.char==='Lucas' ? '#4a90e2' : '#9b59b6';
+  const px=(player.x+0.5)*tileSize, py=(player.y+0.5)*tileSize;
+  minimapCtx.beginPath();
+  minimapCtx.arc(px,py,3,0,Math.PI*2);
+  minimapCtx.fill();
+}
+
+/* =========================================================
+   RENDER (suelo debajo de paredes)
+========================================================= */
+function render(){
+  ctx.clearRect(0,0,width,height);
+  ctx.fillStyle='#08080c';
+  ctx.fillRect(0,0,width,height);
+
+  const drawList=[];
+
+  // floor siempre
+  for (let y=0;y<MAP_ROWS;y++){
+    for (let x=0;x<MAP_COLS;x++){
+      const raw=map[y][x];
+      drawList.push({
+        type:'floor',
+        x,y,
+        depth:(x+0.5)+(y+0.5),
+        tileType: raw===1 ? 0 : raw
+      });
+    }
+  }
+
+  // walls
+  for (let y=0;y<MAP_ROWS;y++){
+    for (let x=0;x<MAP_COLS;x++){
+      if (map[y][x]===1){
+        drawList.push({type:'wall', x,y, depth:(x+0.5)+(y+0.5)+0.1});
+      }
+    }
+  }
+
+  // interactables
+  interactables.forEach(obj=>{
+    if (!obj.taken || obj.type==='whisper' || obj.type==='door'){
+      drawList.push({type:'interactable', obj, depth:(obj.x+0.5)+(obj.y+0.5)+0.2});
+    }
+  });
+
+  // player
+  drawList.push({type:'player', depth:(player.x+0.5)+(player.y+0.5)+0.3});
+  drawList.sort((a,b)=>a.depth-b.depth);
+
+  for (const it of drawList){
+    if (it.type==='floor'){
+      const pos=isoProject(it.x+0.5,it.y+0.5);
+      drawFloorTile(pos.x,pos.y,it.tileType);
+    } else if (it.type==='wall'){
+      const pos=isoProject(it.x+0.5,it.y+0.5);
+      drawWall(pos.x,pos.y);
+    } else if (it.type==='interactable'){
+      drawInteractableObj(it.obj);
+    } else if (it.type==='player'){
+      drawPlayerCharacter();
+    }
+  }
+
+  drawFlashlightEffect();
+  drawMinimap();
+}
+
+/* =========================================================
+   LOOP
+========================================================= */
+function gameLoop(ts){
+  if (!lastTime) lastTime=ts;
+  const dt = Math.min((ts-lastTime)/1000, 0.05);
+  lastTime = ts;
+
+  update(dt);
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+/* =========================================================
+   START
+========================================================= */
+function startGame(){
+  showDialogue([
+    'Sofía: (susurro)... "Casa... del bosque... la mujer que roba almas..."',
+    'Lucas: "¿Sofía? ¿Escuchaste algo?"',
+    'Sofía: "Álex me susurró. Debemos registrar la casa."',
+    'Lucas: "Bien. Yo buscaré pistas. Tú siente lo que puedas."',
+    isMobile ? '🎮 Joystick: mover | Q: cambiar | E: interactuar' : '🎮 WASD mover | Q cambiar | E interactuar'
+  ]);
+}
+
+/* =========================================================
+   PREVENT DEFAULT
+========================================================= */
+document.addEventListener('touchmove', (e)=>{
+  if (e.target.closest('#game-container')) e.preventDefault();
+}, {passive:false});
+document.addEventListener('contextmenu', (e)=> e.preventDefault());
+
+/* =========================================================
+   INIT (con verificación)
+========================================================= */
+detectMobile();
+resize();
+initJoystick();
+initTouchButtons();
+
+camera.x = player.x;
+camera.y = player.y;
+
+// VERIFICACIÓN: garantiza que el spawn NO esté en pared
+fixSpawnIfBlocked();
+
+if (!isMobile) startGame();
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
