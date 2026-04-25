@@ -1,0 +1,146 @@
+[
+  {
+    "id": "flores rosadas",
+    "coordinates": {
+      "x": 58,
+      "y": 68,
+      "w": 64,
+      "h": 60
+    }
+  },
+  {
+    "id": "flores rojas",
+    "coordinates": {
+      "x": 126,
+      "y": 65,
+      "w": 63,
+      "h": 63
+    }
+  },
+  {
+    "id": "flores medianas",
+    "coordinates": {
+      "x": 324,
+      "y": 132,
+      "w": 46,
+      "h": 58
+    }
+  },
+  {
+    "id": "planta con matero",
+    "coordinates": {
+      "x": 444,
+      "y": 129,
+      "w": 65,
+      "h": 64
+    }
+  },
+  {
+    "id": "arbol pequeñp",
+    "coordinates": {
+      "x": 704,
+      "y": 86,
+      "w": 70,
+      "h": 102
+    }
+  },
+  {
+    "id": "pino",
+    "coordinates": {
+      "x": 844,
+      "y": 58,
+      "w": 72,
+      "h": 135
+    }
+  },
+  {
+    "id": "arbol seco",
+    "coordinates": {
+      "x": 1098,
+      "y": 257,
+      "w": 124,
+      "h": 177
+    }
+  },
+  {
+    "id": "arbol frondoso",
+    "coordinates": {
+      "x": 637,
+      "y": 265,
+      "w": 164,
+      "h": 167
+    }
+  },
+  {
+    "id": "pino largo",
+    "coordinates": {
+      "x": 562,
+      "y": 438,
+      "w": 91,
+      "h": 299
+    }
+  },
+  {
+    "id": "dos pinos",
+    "coordinates": {
+      "x": 188,
+      "y": 261,
+      "w": 153,
+      "h": 179
+    }
+  },
+  {
+    "id": "entrada de cueva",
+    "coordinates": {
+      "x": 665,
+      "y": 572,
+      "w": 143,
+      "h": 166
+    }
+  },
+  {
+    "id": "tronco cortado",
+    "coordinates": {
+      "x": 941,
+      "y": 616,
+      "w": 136,
+      "h": 126
+    }
+  },
+  {
+    "id": "pantano",
+    "coordinates": {
+      "x": 1084,
+      "y": 185,
+      "w": 177,
+      "h": 71
+    }
+  },
+  {
+    "id": "hongos",
+    "coordinates": {
+      "x": 1333,
+      "y": 133,
+      "w": 40,
+      "h": 48
+    }
+  },
+  {
+    "id": "hongos verdes",
+    "coordinates": {
+      "x": 1270,
+      "y": 197,
+      "w": 56,
+      "h": 53
+    }
+  },
+  {
+    "id": "arboles pegados",
+    "coordinates": {
+      "x": 810,
+      "y": 440,
+      "w": 140,
+      "h": 141
+    }
+  }
+]

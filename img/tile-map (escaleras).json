@@ -1,0 +1,29 @@
+[
+  {
+    "id": "escaleras ladrillo",
+    "coordinates": {
+      "x": 178,
+      "y": 17,
+      "w": 134,
+      "h": 149
+    }
+  },
+  {
+    "id": "escalera de madera",
+    "coordinates": {
+      "x": 494,
+      "y": 22,
+      "w": 128,
+      "h": 139
+    }
+  },
+  {
+    "id": "puerya escalera",
+    "coordinates": {
+      "x": 746,
+      "y": 578,
+      "w": 122,
+      "h": 170
+    }
+  }
+]

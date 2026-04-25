@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tile Mapper</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a1a; color: #eee; font-family: monospace; display: flex; height: 100vh; overflow: hidden; }
+  #sidebar { width: 300px; min-width: 300px; padding: 10px; overflow-y: auto; background: #111; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 8px; }
+  #canvas-wrap { flex: 1; overflow: auto; background: #2a2a2a; }
+  canvas { display: block; cursor: crosshair; image-rendering: pixelated; }
+
+  h3 { color: #ff0; font-size: 13px; }
+  .section { border-top: 1px solid #333; padding-top: 8px; }
+  .section label { font-size: 11px; color: #aaa; display: block; margin-bottom: 3px; }
+
+  select, input[type=text], input[type=number] {
+    background: #222; color: #eee; border: 1px solid #444;
+    padding: 4px 6px; width: 100%; font-size: 11px; font-family: monospace;
+  }
+  input[type=file] { font-size: 11px; color: #aaa; width: 100%; }
+
+  .btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  button {
+    background: #333; color: #eee; border: 1px solid #555;
+    padding: 4px 8px; cursor: pointer; font-size: 11px; font-family: monospace;
+  }
+  button:hover { background: #444; }
+  button.green { background: #1a3a1a; color: #0f0; border-color: #0a2a0a; }
+  button.red   { background: #3a1a1a; color: #f88; border-color: #2a0a0a; }
+
+  #info { background: #000; padding: 6px; font-size: 11px; color: #0ff; min-height: 36px; line-height: 1.5; }
+
+  .tile-entry { background: #222; border: 1px solid #444; padding: 5px 6px; font-size: 11px; cursor: pointer; }
+  .tile-entry:hover { background: #2a2a2a; }
+  .tile-entry.active { border-color: #ff0; background: #2a2a00; }
+  .tile-entry .coords { color: #0f0; font-size: 10px; margin-top: 2px; }
+  .tile-entry .row { display: flex; justify-content: space-between; align-items: center; }
+  .tile-entry button { padding: 1px 5px; font-size: 10px; }
+
+  #img-preview { font-size: 10px; color: #888; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h3>🗺 Tile Mapper</h3>
+
+  <!-- Selector de imagen -->
+  <div class="section">
+    <label>Spritesheet del proyecto:</label>
+    <select id="img-select" onchange="loadFromSelect()">
+      <option value="">— seleccionar —</option>
+      <option value="img/hoja de terreno.png">hoja de terreno.png</option>
+      <option value="img/kenney-tiles.png">kenney-tiles.png</option>
+      <option value="img/hoja de terreno.jpg">hoja de terreno.jpg</option>
+      <option value="img/lucas.png">lucas.png</option>
+      <option value="img/sofia.png">sofia.png</option>
+    </select>
+    <div style="margin: 4px 0; font-size:10px; color:#666; text-align:center">— o subir archivo —</div>
+    <input type="file" id="file-input" accept="image/*" onchange="loadFromFile()">
+    <div id="img-preview"></div>
+  </div>
+
+  <!-- Zoom -->
+  <div class="section">
+    <label>Zoom:</label>
+    <div class="btn-row">
+      <button onclick="setZoom(0.5)">50%</button>
+      <button onclick="setZoom(0.75)">75%</button>
+      <button onclick="setZoom(1)">100%</button>
+      <button onclick="setZoom(1.5)">150%</button>
+      <button onclick="setZoom(2)">200%</button>
+      <span id="zoom-label" style="font-size:11px; padding:4px">100%</span>
+    </div>
+  </div>
+
+  <!-- Info cursor -->
+  <div id="info">Carga una imagen para empezar</div>
+
+  <!-- Lista de tiles -->
+  <div class="section" style="flex:1; overflow-y:auto;">
+    <label>Tiles mapeados (<span id="tile-count">0</span>):</label>
+    <div id="tile-list" style="display:flex; flex-direction:column; gap:3px; margin-top:4px;"></div>
+  </div>
+
+  <!-- Agregar manual -->
+  <div class="section">
+    <label>Agregar manual (x,y,w,h):</label>
+    <input type="text" id="manual-name" placeholder="nombre">
+    <input type="text" id="manual-coords" placeholder="x, y, w, h" style="margin-top:3px">
+    <button onclick="addManual()" style="margin-top:4px; width:100%">+ Agregar</button>
+  </div>
+
+  <!-- Acciones -->
+  <div class="section">
+    <div class="btn-row">
+      <button class="green" onclick="exportJSON()" style="flex:1">📋 Exportar JSON</button>
+      <button onclick="importJSON()" style="flex:1">📂 Importar JSON</button>
+    </div>
+    <button class="red" onclick="clearAll()" style="width:100%; margin-top:4px">🗑 Limpiar tiles</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport()">
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+</div>
+
+<script>
+let zoom = 1;
+let tiles = [];
+let dragging = false;
+let startX, startY, curX, curY;
+let selectedTile = null;
+let currentImgSrc = '';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const img = new Image();
+
+img.onload = () => {
+  document.getElementById('img-preview').textContent = `${img.width} × ${img.height} px`;
+  canvas.width = img.width * zoom;
+  canvas.height = img.height * zoom;
+  redraw();
+};
+
+function loadFromSelect() {
+  const src = document.getElementById('img-select').value;
+  if (!src) return;
+  currentImgSrc = src;
+  img.src = src + '?t=' + Date.now();
+  document.getElementById('img-preview').textContent = 'Cargando...';
+}
+
+function loadFromFile() {
+  const file = document.getElementById('file-input').files[0];
+  if (!file) return;
+  currentImgSrc = file.name;
+  const url = URL.createObjectURL(file);
+  img.src = url;
+  document.getElementById('img-select').value = '';
+  document.getElementById('img-preview').textContent = 'Cargando...';
+}
+
+// ── Canvas interaction ────────────────────────────────────────────────────
+
+function toImg(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: Math.round((clientX - rect.left) / zoom),
+    y: Math.round((clientY - rect.top)  / zoom)
+  };
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (!img.complete || !img.naturalWidth) return;
+  const p = toImg(e.clientX, e.clientY);
+  startX = p.x; startY = p.y; curX = p.x; curY = p.y;
+  dragging = true;
+});
+
+canvas.addEventListener('mousemove', e => {
+  const p = toImg(e.clientX, e.clientY);
+  if (dragging) {
+    curX = p.x; curY = p.y;
+    redraw();
+    const x = Math.min(startX, curX), y = Math.min(startY, curY);
+    const w = Math.abs(curX - startX), h = Math.abs(curY - startY);
+    document.getElementById('info').textContent =
+      `Selección: x:${x} y:${y} w:${w} h:${h}`;
+  } else {
+    document.getElementById('info').textContent = `Pixel: ${p.x}, ${p.y}`;
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (!dragging) return;
+  dragging = false;
+  const x = Math.min(startX, curX), y = Math.min(startY, curY);
+  const w = Math.abs(curX - startX), h = Math.abs(curY - startY);
+  if (w < 4 || h < 4) { redraw(); return; }
+  const name = prompt(`Nombre para este tile:\n(${x}, ${y}, ${w}×${h})`, `tile_${tiles.length}`);
+  if (name && name.trim()) {
+    tiles.push({ name: name.trim(), x, y, w, h });
+    renderList();
+  }
+  redraw();
+});
+
+// ── Render ────────────────────────────────────────────────────────────────
+
+function setZoom(z) {
+  zoom = z;
+  document.getElementById('zoom-label').textContent = Math.round(z * 100) + '%';
+  redraw();
+}
+
+function redraw() {
+  if (!img.naturalWidth) return;
+  canvas.width  = img.naturalWidth  * zoom;
+  canvas.height = img.naturalHeight * zoom;
+  ctx.save();
+  ctx.scale(zoom, zoom);
+  ctx.drawImage(img, 0, 0);
+
+  // Tiles guardados
+  tiles.forEach(t => {
+    const active = t === selectedTile;
+    ctx.strokeStyle = active ? '#ff0' : '#00ff88';
+    ctx.lineWidth = 1.5 / zoom;
+    ctx.strokeRect(t.x, t.y, t.w, t.h);
+    ctx.fillStyle = active ? 'rgba(255,255,0,0.18)' : 'rgba(0,255,136,0.1)';
+    ctx.fillRect(t.x, t.y, t.w, t.h);
+    ctx.fillStyle = active ? '#ff0' : '#00ff88';
+    ctx.font = `bold ${11 / zoom}px monospace`;
+    ctx.fillText(t.name, t.x + 3, t.y + 13 / zoom);
+  });
+
+  // Selección activa
+  if (dragging) {
+    const x = Math.min(startX, curX), y = Math.min(startY, curY);
+    const w = Math.abs(curX - startX), h = Math.abs(curY - startY);
+    ctx.strokeStyle = '#f00';
+    ctx.lineWidth = 1.5 / zoom;
+    ctx.setLineDash([4 / zoom, 3 / zoom]);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,0,0,0.12)';
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.restore();
+}
+
+// ── Tile list ─────────────────────────────────────────────────────────────
+
+function renderList() {
+  document.getElementById('tile-count').textContent = tiles.length;
+  const list = document.getElementById('tile-list');
+  list.innerHTML = '';
+  tiles.forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'tile-entry' + (t === selectedTile ? ' active' : '');
+    div.innerHTML = `
+      <div class="row">
+        <b>${t.name}</b>
+        <button onclick="removeTile(${i}); event.stopPropagation()">✕</button>
+      </div>
+      <div class="coords">x:${t.x} y:${t.y} w:${t.w} h:${t.h}</div>`;
+    div.onclick = () => { selectedTile = (selectedTile === t ? null : t); renderList(); redraw(); };
+    list.appendChild(div);
+  });
+}
+
+function removeTile(i) {
+  if (selectedTile === tiles[i]) selectedTile = null;
+  tiles.splice(i, 1);
+  renderList(); redraw();
+}
+
+function clearAll() {
+  if (!tiles.length || confirm('¿Limpiar todos los tiles?')) {
+    tiles = []; selectedTile = null; renderList(); redraw();
+  }
+}
+
+function addManual() {
+  const name = document.getElementById('manual-name').value.trim();
+  const parts = document.getElementById('manual-coords').value.split(',').map(s => parseInt(s.trim()));
+  if (!name) return alert('Escribe un nombre');
+  if (parts.length !== 4 || parts.some(isNaN)) return alert('Formato: x, y, w, h');
+  tiles.push({ name, x: parts[0], y: parts[1], w: parts[2], h: parts[3] });
+  document.getElementById('manual-name').value = '';
+  document.getElementById('manual-coords').value = '';
+  renderList(); redraw();
+}
+
+// ── Import / Export ───────────────────────────────────────────────────────
+
+function exportJSON() {
+  const out = tiles.map(t => ({
+    id: t.name,
+    coordinates: { x: t.x, y: t.y, w: t.w, h: t.h }
+  }));
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tile-map.json';
+  a.click();
+  document.getElementById('info').textContent = `✅ Exportado ${tiles.length} tiles`;
+}
+
+function importJSON() {
+  document.getElementById('import-input').click();
+}
+
+function handleImport() {
+  const file = document.getElementById('import-input').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      tiles = data.map(t => ({
+        name: t.id,
+        x: t.coordinates.x, y: t.coordinates.y,
+        w: t.coordinates.w, h: t.coordinates.h
+      }));
+      renderList(); redraw();
+      document.getElementById('info').textContent = `✅ Importados ${tiles.length} tiles`;
+    } catch { alert('JSON inválido'); }
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>

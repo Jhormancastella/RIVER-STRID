@@ -1,0 +1,164 @@
+[
+  {
+    "id": "piedra de agua 1",
+    "coordinates": {
+      "x": 320,
+      "y": 194,
+      "w": 128,
+      "h": 142
+    }
+  },
+  {
+    "id": "piedra de agua 2",
+    "coordinates": {
+      "x": 456,
+      "y": 190,
+      "w": 117,
+      "h": 142
+    }
+  },
+  {
+    "id": "piedra pequeña con agua",
+    "coordinates": {
+      "x": 1098,
+      "y": 260,
+      "w": 132,
+      "h": 94
+    }
+  },
+  {
+    "id": "dos piedras con musgo",
+    "coordinates": {
+      "x": 70,
+      "y": 73,
+      "w": 46,
+      "h": 51
+    }
+  },
+  {
+    "id": "piedras grande con musgo",
+    "coordinates": {
+      "x": 254,
+      "y": 66,
+      "w": 63,
+      "h": 56
+    }
+  },
+  {
+    "id": "cueva con agua",
+    "coordinates": {
+      "x": 198,
+      "y": 322,
+      "w": 162,
+      "h": 127
+    }
+  },
+  {
+    "id": "arbol caido con rocas",
+    "coordinates": {
+      "x": 352,
+      "y": 338,
+      "w": 173,
+      "h": 124
+    }
+  },
+  {
+    "id": "soga",
+    "coordinates": {
+      "x": 717,
+      "y": 685,
+      "w": 71,
+      "h": 45
+    }
+  },
+  {
+    "id": "agua",
+    "coordinates": {
+      "x": 1104,
+      "y": 360,
+      "w": 96,
+      "h": 93
+    }
+  },
+  {
+    "id": "agua piedras",
+    "coordinates": {
+      "x": 1200,
+      "y": 456,
+      "w": 90,
+      "h": 94
+    }
+  },
+  {
+    "id": "oja redonda",
+    "coordinates": {
+      "x": 581,
+      "y": 10,
+      "w": 64,
+      "h": 51
+    }
+  },
+  {
+    "id": "planta de agua",
+    "coordinates": {
+      "x": 956,
+      "y": 0,
+      "w": 69,
+      "h": 82
+    }
+  },
+  {
+    "id": "agua 2",
+    "coordinates": {
+      "x": 1201,
+      "y": 358,
+      "w": 91,
+      "h": 95
+    }
+  },
+  {
+    "id": "agua 3",
+    "coordinates": {
+      "x": 1302,
+      "y": 368,
+      "w": 76,
+      "h": 77
+    }
+  },
+  {
+    "id": "lago con rocas",
+    "coordinates": {
+      "x": 186,
+      "y": 194,
+      "w": 128,
+      "h": 130
+    }
+  },
+  {
+    "id": "dos rocas medianas",
+    "coordinates": {
+      "x": 132,
+      "y": 257,
+      "w": 50,
+      "h": 61
+    }
+  },
+  {
+    "id": "rocas y agua grandes",
+    "coordinates": {
+      "x": 328,
+      "y": 125,
+      "w": 113,
+      "h": 73
+    }
+  },
+  {
+    "id": "botes",
+    "coordinates": {
+      "x": 246,
+      "y": 568,
+      "w": 159,
+      "h": 177
+    }
+  }
+]

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Collision System</title>
+</head>
+<body>
+    <h1>Testing Chapter 3 Water Collision</h1>
+    <div id="results"></div>
+
+    <script src="js/core/config.js"></script>
+    <script src="js/core/state.js"></script>
+    <script src="js/entities/map.js"></script>
+    
+    <script>
+        // Test collision system for chapter 3
+        function testCollision() {
+            const results = document.getElementById('results');
+            
+            // Set to chapter 3
+            GameState.currentChapter = 3;
+            loadChapterMap(3, 0);
+            
+            // Test water tiles (should not be walkable)
+            const waterTile = isWalkable(19, 13); // Water position
+            results.innerHTML += `<p>Water tile walkable: ${waterTile} (should be false)</p>`;
+            
+            // Test bridge tiles (should be walkable)
+            const bridgeTile = isWalkable(19, 12); // Bridge position
+            results.innerHTML += `<p>Bridge tile walkable: ${bridgeTile} (should be true)</p>`;
+            
+            // Test normal floor (should be walkable)
+            const floorTile = isWalkable(5, 5); // Normal floor
+            results.innerHTML += `<p>Floor tile walkable: ${floorTile} (should be true)</p>`;
+            
+            // Test wall (should not be walkable)
+            const wallTile = isWalkable(0, 0); // Wall position
+            results.innerHTML += `<p>Wall tile walkable: ${wallTile} (should be false)</p>`;
+            
+            results.innerHTML += `<h2>Test Results:</h2>`;
+            if (!waterTile && bridgeTile && floorTile && !wallTile) {
+                results.innerHTML += `<p style="color: green;">✅ All tests passed! Collision system working correctly.</p>`;
+            } else {
+                results.innerHTML += `<p style="color: red;">❌ Some tests failed. Check the collision logic.</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        window.onload = testCollision;
+    </script>
+</body>
+</html>

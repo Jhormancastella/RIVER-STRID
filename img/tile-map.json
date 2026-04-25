@@ -1,0 +1,101 @@
+[
+  {
+    "id": "muro de ladrillos 1 ",
+    "coordinates": {
+      "x": 734,
+      "y": 369,
+      "w": 119,
+      "h": 145
+    }
+  },
+  {
+    "id": "muro de ladrillos 2",
+    "coordinates": {
+      "x": 908,
+      "y": 369,
+      "w": 117,
+      "h": 143
+    }
+  },
+  {
+    "id": "puerta-derecha",
+    "coordinates": {
+      "x": 622,
+      "y": 606,
+      "w": 62,
+      "h": 142
+    }
+  },
+  {
+    "id": "puerta-izquierda",
+    "coordinates": {
+      "x": 554,
+      "y": 584,
+      "w": 64,
+      "h": 153
+    }
+  },
+  {
+    "id": "suelo de bloque",
+    "coordinates": {
+      "x": 946,
+      "y": 84,
+      "w": 123,
+      "h": 72
+    }
+  },
+  {
+    "id": "suelo de pieda",
+    "coordinates": {
+      "x": 1106,
+      "y": 72,
+      "w": 123,
+      "h": 90
+    }
+  },
+  {
+    "id": "muro de piedra",
+    "coordinates": {
+      "x": 1077,
+      "y": 370,
+      "w": 128,
+      "h": 144
+    }
+  },
+  {
+    "id": "suelo de madera medio",
+    "coordinates": {
+      "x": 494,
+      "y": 193,
+      "w": 118,
+      "h": 83
+    }
+  },
+  {
+    "id": "suelo de madera oscuro",
+    "coordinates": {
+      "x": 638,
+      "y": 190,
+      "w": 134,
+      "h": 91
+    }
+  },
+  {
+    "id": "suelo de tierra",
+    "coordinates": {
+      "x": 796,
+      "y": 193,
+      "w": 125,
+      "h": 84
+    }
+  },
+  {
+    "id": "suelo de tieera oscura",
+    "coordinates": {
+      "x": 797,
+      "y": 77,
+      "w": 120,
+      "h": 89
+    }
+  }
+]

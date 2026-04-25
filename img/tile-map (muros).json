@@ -1,0 +1,29 @@
+[
+  {
+    "id": "tile_0",
+    "coordinates": {
+      "x": 1022,
+      "y": 1,
+      "w": 70,
+      "h": 87
+    }
+  },
+  {
+    "id": "muro de castillo",
+    "coordinates": {
+      "x": 717,
+      "y": 606,
+      "w": 61,
+      "h": 131
+    }
+  },
+  {
+    "id": "muro de roca",
+    "coordinates": {
+      "x": 578,
+      "y": 92,
+      "w": 123,
+      "h": 102
+    }
+  }
+]

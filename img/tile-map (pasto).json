@@ -1,0 +1,38 @@
+[
+  {
+    "id": "pasto medio",
+    "coordinates": {
+      "x": 637,
+      "y": 62,
+      "w": 144,
+      "h": 100
+    }
+  },
+  {
+    "id": "pasto bajo",
+    "coordinates": {
+      "x": 1105,
+      "y": 58,
+      "w": 144,
+      "h": 107
+    }
+  },
+  {
+    "id": "muro de pasto",
+    "coordinates": {
+      "x": 16,
+      "y": 368,
+      "w": 158,
+      "h": 138
+    }
+  },
+  {
+    "id": "pasto alto",
+    "coordinates": {
+      "x": 176,
+      "y": 57,
+      "w": 133,
+      "h": 101
+    }
+  }
+]
