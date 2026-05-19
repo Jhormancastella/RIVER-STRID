@@ -61,6 +61,7 @@ const game = {
   renderer: null,
   camera: { x: 0, y: 0, shake: 0 },
   running: false,
+  paused: false, // ✅ Estado de pausa
   lastTime: 0,
 
   async init() {
@@ -72,6 +73,23 @@ const game = {
     this.detectMobileMode();
     await this.loadSprites();
     this.loadChapter(1);
+    
+    // ✅ Inicializar menú de pausa con callback para salir al menú principal
+    if (typeof window.PauseMenu?.init === 'function') {
+      window.PauseMenu.init(() => {
+        // Callback cuando el jugador elige "Salir al Menú"
+        this.running = false;
+        if (typeof window.mainMenu?.show === 'function') {
+          window.mainMenu.show();
+        }
+      });
+      // Exponer referencia para acceso desde otros módulos
+      window.pauseMenu = window.PauseMenu;
+    }
+    
+    // ✅ Configurar auto-guardado periódico (cada 45 segundos)
+    this._setupAutoSave();
+    
     this.running = true;
     this.lastTime = 0;
     requestAnimationFrame(this.gameLoop.bind(this));
@@ -79,22 +97,37 @@ const game = {
   },
 
   loadChapter(chapter) {
+    // Wrapper para compatibilidad: llama a loadChapterAtPosition con spawn por defecto
+    const cfg = CHAPTER_CONFIG[chapter];
+    this.loadChapterAtPosition(chapter, cfg.spawnX, cfg.spawnY, 0, true);
+  },
+
+  // ✅ NUEVO: Cargar capítulo en posición específica (para "Continuar")
+  async loadChapterAtPosition(chapter, x, y, floor = 0, resetInventory = false) {
     GameState.currentChapter = chapter;
     GameState.chapterEnded = false;
     GameState.dialogueActive = false;
     GameState.nearInteractable = null;
+    GameState._stairCooldown = false;
+    if (TypewriterState.interval) { clearInterval(TypewriterState.interval); TypewriterState.interval = null; }
+    TypewriterState.done = true;
+    TypewriterState.fullText = '';
 
-    player.floor = 0;
-    loadChapterMap(chapter, 0);
+    player.floor = floor;
+    loadChapterMap(chapter, floor);
     interactableManager.loadChapter(chapter);
 
-    const cfg = CHAPTER_CONFIG[chapter];
-    player.x = cfg.spawnX;
-    player.y = cfg.spawnY;
-    player.inventory = [];
+    // ✅ POSICIÓN PERSONALIZADA (no spawn por defecto si resetInventory es false)
+    player.x = x;
+    player.y = y;
     player.facing = { x: 0, y: 1 };
     player.isMoving = false;
-    player.sensitivity = 0;
+    
+    // Solo resetear inventario si es nueva partida
+    if (resetInventory) {
+      player.inventory = [];
+      player.sensitivity = 0;
+    }
 
     this.fixSpawnIfBlocked();
     this.camera.x = player.x;
@@ -102,10 +135,10 @@ const game = {
 
     inventorySystem.update();
     hud.updateCharacterIndicator();
-    hud.updateFloor(0);
+    hud.updateFloor(floor);
 
     const titleEl = document.getElementById('chapter-title');
-    if (titleEl) titleEl.textContent = cfg.title;
+    if (titleEl) titleEl.textContent = CHAPTER_CONFIG[chapter]?.title || '';
   },
 
   setupResize() {
@@ -142,6 +175,12 @@ const game = {
     dialogueSystem.setMobileHints(isMobile);
     screenSystem.showRotateHint(isMobile);
     minimap.resize(isMobile ? 68 : 86);
+    
+    // ✅ Mostrar/ocultar botón de pausa según dispositivo
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) {
+      pauseBtn.style.display = isMobile ? 'flex' : 'none';
+    }
   },
 
   initSystems() {
@@ -210,6 +249,10 @@ const game = {
         if (target.collectible && target.state === 'available') {
           target.take();
           inventorySystem.addItem(target.name);
+          // ✅ Guardar progreso al recoger items importantes
+          if (target.name !== 'Pista Genérica') {
+            this._saveProgress('item_collected');
+          }
         }
         dialogueSystem.show(target.dialog);
       }
@@ -221,6 +264,10 @@ const game = {
 
   checkChapterEnd() {
     if (!GameState.chapterEnded) return;
+    
+    // ✅ GUARDAR PROGRESO ANTES DE TRANSICIÓN DE CAPÍTULO
+    this._saveProgress('chapter_complete');
+    
     const chapter = GameState.currentChapter;
     if (chapter < 3) {
       setTimeout(() => {
@@ -257,6 +304,34 @@ const game = {
     }
   },
 
+  // ✅ Método para pausar el juego
+  pause() {
+    if (this.paused || !this.running) return;
+    this.paused = true;
+    if (typeof GameState !== 'undefined') GameState.paused = true;
+    // Mostrar menú de pausa si está inicializado
+    if (typeof window.PauseMenu?.show === 'function') {
+      window.PauseMenu.show();
+    }
+  },
+
+  // ✅ Método para reanudar el juego
+  resume() {
+    if (!this.paused) return;
+    this.paused = false;
+    if (typeof GameState !== 'undefined') GameState.paused = false;
+    // Ocultar menú de pausa
+    if (typeof window.PauseMenu?.hide === 'function') {
+      window.PauseMenu.hide();
+    }
+  },
+
+  // ✅ Método para alternar pausa
+  togglePause() {
+    if (this.paused) this.resume();
+    else this.pause();
+  },
+
   startGame() {
     this.tryFullscreen();
     screenSystem.hideTutorial();
@@ -264,8 +339,50 @@ const game = {
     this.showOpeningDialogue();
   },
 
+  // ✅ Configurar auto-guardado periódico
+  _setupAutoSave() {
+    // Guardar cada 45 segundos si el juego está activo y no está pausado
+    setInterval(() => {
+      if (this.running && !this.paused && !GameState.dialogueActive && GameState.gameStarted) {
+        this._saveProgress('auto');
+      }
+    }, 45000);
+  },
+
+  // ✅ Guardar progreso del juego (reutilizable para checkpoints)
+  _saveProgress(reason = 'manual') {
+    if (typeof CloudSave?.save !== 'function') return;
+    
+    // Construir objeto de estado compatible con CloudSave
+    const saveState = {
+      currentChapter: GameState.currentChapter ?? 1,
+      player: {
+        x: player?.x ?? CHAPTER_CONFIG[GameState.currentChapter]?.spawnX ?? 5,
+        y: player?.y ?? CHAPTER_CONFIG[GameState.currentChapter]?.spawnY ?? 10,
+        character: player?.character ?? 'lucas',
+        sensitivity: player?.sensitivity ?? 0,
+        inventory: Array.isArray(player?.inventory) ? [...player.inventory] : [],
+        floor: player?.floor ?? 0
+      },
+      interactables: typeof interactableManager?.getState === 'function' 
+        ? interactableManager.getState() 
+        : {},
+      playtime: Math.floor(GameState.ambientTimer ?? 0)
+    };
+    
+    CloudSave.save(saveState);
+    
+    // Actualizar tiempo jugado en localStorage para el perfil
+    localStorage.setItem('riverstrid_playtime', String(Math.floor(GameState.ambientTimer ?? 0)));
+    
+    if (reason === 'checkpoint' || reason === 'chapter_complete') {
+      console.log('💾 Progreso guardado:', reason);
+    }
+  },
+
   update(dt) {
-    if (!GameState.running || GameState.dialogueActive) return;
+    // ✅ No actualizar si está pausado o en diálogo
+    if (!GameState.running || GameState.dialogueActive || this.paused) return;
     const keyboard = keyboardInput.getMovement();
     const joystick = joystickInput.getMovement();
     let dx = keyboard.dx || joystick.dx;

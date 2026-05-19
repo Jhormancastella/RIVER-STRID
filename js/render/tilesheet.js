@@ -119,6 +119,7 @@ const TILESHEET = {
   // Suelos por TileType: 0=FLOOR, 2=DARK, 3=INTERIOR, 4=STAIR, 5=UPPER, 6=BRIDGE
   drawForType(ctx, type, sx, sy, tileW, tileH, chapter = 1) {
     if (!this.ready) return false;
+
     // Cap 3: DARK = agua del río, BRIDGE = puente de madera
     if (chapter === 3 && type === 2) {
       return this._drawClipped(ctx, this.TILES.water_tile1, sx, sy, tileW, tileH);
@@ -126,13 +127,22 @@ const TILESHEET = {
     if (chapter === 3 && type === 6) {
       return this._drawClipped(ctx, this.TILES.floor_wood_dark, sx, sy, tileW, tileH);
     }
+
     switch (type) {
-      case 0: return this._drawClipped(ctx, this.TILES.floor_grass_mid,  sx, sy, tileW, tileH);
-      case 2: return this._drawClipped(ctx, this.TILES.floor_dirt_dark,  sx, sy, tileW, tileH);
-      case 3: return this._drawClipped(ctx, this.TILES.floor_stone,      sx, sy, tileW, tileH);
-      case 4: return this._drawClipped(ctx, this.TILES.floor_block,      sx, sy, tileW, tileH);
-      case 5: return this._drawClipped(ctx, this.TILES.floor_grass_low,  sx, sy, tileW, tileH);
-      case 6: return this._drawClipped(ctx, this.TILES.floor_wood_dark,  sx, sy, tileW, tileH); // puente
+      case 0: // FLOOR — madera en cap 1 (interior casa), pasto en cap 2 y 3
+        return chapter === 1
+          ? this._drawClipped(ctx, this.TILES.floor_wood_mid,  sx, sy, tileW, tileH)
+          : this._drawClipped(ctx, this.TILES.floor_grass_mid, sx, sy, tileW, tileH);
+      case 2: // DARK — tierra oscura / sombra
+        return this._drawClipped(ctx, this.TILES.floor_dirt_dark, sx, sy, tileW, tileH);
+      case 3: // INTERIOR — piedra (sendero, habitación interior)
+        return this._drawClipped(ctx, this.TILES.floor_stone, sx, sy, tileW, tileH);
+      case 4: // STAIR
+        return this._drawClipped(ctx, this.TILES.floor_block, sx, sy, tileW, tileH);
+      case 5: // UPPER — pasto bajo (bordes/balcones)
+        return this._drawClipped(ctx, this.TILES.floor_grass_low, sx, sy, tileW, tileH);
+      case 6: // BRIDGE
+        return this._drawClipped(ctx, this.TILES.floor_wood_dark, sx, sy, tileW, tileH);
       default: return false;
     }
   },
@@ -195,8 +205,9 @@ const TILESHEET = {
   // Árbol sobre tile WALL (cap 2)
   drawTree(ctx, tileKey, sx, sy, tileW, tileH) {
     const tile = this.TILES[tileKey];
-    const img = this._img(tile ? tile.sheet : null);
-    if (!img || !tile) return false;
+    if (!tile) return false;
+    const img = this._img(tile.sheet);
+    if (!img) return false;
     const scale = tileW / tile.w * 1.1;
     const dw = tile.w * scale;
     const dh = tile.h * scale;

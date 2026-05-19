@@ -1,0 +1,208 @@
+/* css/auth-overlay.css */
+/* Overlay de autenticación - Estética adaptada a RIVER-STRID */
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 15, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.auth-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.auth-box {
+  background: linear-gradient(145deg, rgba(20, 20, 30, 0.98), rgba(15, 15, 25, 0.98));
+  border: 2px solid var(--accent, #8a0000);
+  padding: 2rem 1.5rem;
+  border-radius: 12px;
+  width: min(92%, 420px);
+  text-align: center;
+  box-shadow: 
+    0 0 0 1px rgba(138, 0, 0, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(138, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-box h2 {
+  color: var(--text, #e0e0e0);
+  margin-bottom: 1.25rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(0.9rem, 3.5vw, 1.15rem);
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(138, 0, 0, 0.4);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(17, 17, 27, 0.9);
+  border: 1px solid rgba(68, 68, 85, 0.8);
+  border-radius: 6px;
+  color: var(--text, #fff);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-input::placeholder {
+  color: var(--muted, #777);
+  opacity: 0.8;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--accent, #8a0000);
+  box-shadow: 0 0 0 3px rgba(138, 0, 0, 0.25);
+}
+
+.auth-input:invalid:not(:placeholder-shown) {
+  border-color: #ef4444;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 0.5rem;
+  background: linear-gradient(135deg, var(--accent, #8a0000), #a00000);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(0.65rem, 2vw, 0.8rem);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.2s;
+  box-shadow: 0 4px 12px rgba(138, 0, 0, 0.3);
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a00000, #b30000);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(138, 0, 0, 0.45);
+}
+
+.auth-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auth-btn.secondary {
+  background: rgba(51, 51, 68, 0.9);
+  border: 1px solid rgba(100, 100, 120, 0.6);
+  box-shadow: none;
+  margin-top: 0.75rem;
+}
+
+.auth-btn.secondary:hover:not(:disabled) {
+  background: rgba(68, 68, 85, 0.95);
+  border-color: var(--accent, #8a0000);
+}
+
+.auth-error {
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+  min-height: 1.3em;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.4;
+}
+
+.auth-error:empty {
+  display: none;
+}
+
+.auth-toggle {
+  display: inline-block;
+  color: var(--accent, #8a0000);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.auth-toggle:hover {
+  background: rgba(138, 0, 0, 0.1);
+  text-decoration: underline;
+}
+
+.auth-toggle:focus {
+  outline: 2px solid var(--accent, #8a0000);
+  outline-offset: 2px;
+}
+
+.auth-footer {
+  color: var(--muted, #666);
+  font-size: 0.75rem;
+  margin-top: 1.25rem;
+  font-family: 'Press Start 2P', cursive;
+  opacity: 0.8;
+}
+
+/* Responsive móvil */
+@media (max-width: 480px) {
+  .auth-box {
+    padding: 1.5rem 1.25rem;
+    margin: 0 12px;
+  }
+  
+  .auth-input {
+    padding: 10px 12px;
+    font-size: 1rem; /* Evitar zoom en iOS */
+  }
+  
+  .auth-btn {
+    padding: 12px;
+  }
+}
+
+/* Accesibilidad: reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .auth-overlay,
+  .auth-box {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  .auth-box {
+    border-width: 3px;
+    box-shadow: 0 0 0 2px #fff, 0 8px 32px rgba(0,0,0,0.8);
+  }
+  
+  .auth-input {
+    border-width: 2px;
+  }
+}

@@ -213,10 +213,12 @@ const CHAPTER_INTERACTABLES = {
 
 const interactableManager = {
   interactables: [],
+  
   loadChapter(chapter) {
     const data = CHAPTER_INTERACTABLES[chapter] || INTERACTABLES_CAP1;
     this.interactables = data.map(d => new Interactable(d));
   },
+  
   getNearInteractable(playerX, playerY, char) {
     return this.interactables.find(obj =>
       obj.isAvailable(char) &&
@@ -225,6 +227,35 @@ const interactableManager = {
       Math.abs(playerY - obj.y) <= CONFIG.PLAYER.INTERACTION_DISTANCE
     );
   },
+  
   getAllInteractables() { return this.interactables; },
-  hasItem(itemName) { return this.interactables.some(obj => obj.name === itemName && obj.state === InteractableState.taken); }
+  
+  hasItem(itemName) { return this.interactables.some(obj => obj.name === itemName && obj.state === InteractableState.taken); },
+  
+  // ✅ Guardar estado de todos los interactables (para cloud save)
+  getState() {
+    const state = {};
+    if (this.interactables) {
+      for (const [key, obj] of Object.entries(this.interactables)) {
+        state[key] = {
+          state: obj.state,           // 'available' | 'taken' | 'completed'
+          dialogShown: obj.dialogShown || false,
+          chapter: obj.chapter
+        };
+      }
+    }
+    return state;
+  },
+  
+  // ✅ Restaurar estado desde save
+  restoreState(savedState) {
+    if (!savedState || !this.interactables) return;
+    for (const [key, saved] of Object.entries(savedState)) {
+      const obj = this.interactables[key];
+      if (obj) {
+        obj.state = saved.state ?? obj.state;
+        obj.dialogShown = saved.dialogShown ?? false;
+      }
+    }
+  }
 };

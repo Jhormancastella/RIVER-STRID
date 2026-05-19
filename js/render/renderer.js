@@ -98,24 +98,23 @@ class Renderer {
 
   render(camera) {
     this.clear();
+
+    // ── Paso 1: dibujar todos los suelos primero (sin z-order, son el fondo) ──
     this.drawFloor(camera);
 
-    // Render por fila para z-ordering correcto: muro/interactable/jugador ordenados por Y
+    // ── Paso 2: z-ordering isométrico por capas (layer = x + y) ──────────────
     const interactables = interactableManager.getAllInteractables().filter(
       obj => !(obj.state === 'taken' && obj.type !== 'whisper' && obj.type !== 'door')
             && (obj.floor === undefined || obj.floor === player.floor)
     );
 
-    // Profundidad isométrica continua del jugador (x+y), evita saltos visuales al cruzar el centro de un tile
     const playerDepth = player.x + player.y;
-
-    // Dibujamos por "capas" de suma (x + y) para asegurar el orden isométrico correcto
-    // Esto hace que se dibuje de atrás hacia adelante (de arriba a abajo en la pantalla)
     const maxLayer = (CONFIG.MAP.ROWS - 1) + (CONFIG.MAP.COLS - 1);
     let playerDrawn = false;
-    
+
     for (let layer = 0; layer <= maxLayer; layer++) {
-      // Dibujar jugador cuando su profundidad continua queda por delante de esta capa
+
+      // Dibujar jugador cuando su profundidad queda por delante de esta capa
       if (!playerDrawn && playerDepth < layer + 1) {
         this.drawPlayer(camera);
         playerDrawn = true;
@@ -125,26 +124,28 @@ class Renderer {
         const x = layer - y;
         if (x < 0 || x >= CONFIG.MAP.COLS) continue;
 
-        // Frustum culling: saltar tiles fuera de pantalla
+        // Frustum culling antes de cualquier dibujo
         if (!isoProjection.isTileVisible(x, y, camera.x, camera.y, this.width, this.height)) continue;
 
-        // Muros — cap 2: árboles, cap 3: obstáculos de agua, resto: muros de ladrillo
+        // ── Muros / obstáculos ──────────────────────────────────────────────
         if (MAP_DATA[y][x] === TileType.WALL) {
           const worldPos = isoProjection.getTileCenter(x, y);
           const screenPos = isoProjection.project(worldPos.x, worldPos.y, camera.x, camera.y, this.width, this.height);
+          // sy apunta a la base del tile para que el muro crezca hacia arriba desde ahí
+          const baseY = screenPos.y + isoProjection.tileH / 2;
           if (GameState.currentChapter === 2) {
             TILESHEET.drawForType(this.ctx, TileType.FLOOR, screenPos.x, screenPos.y, isoProjection.tileW, isoProjection.tileH);
-            TILESHEET.drawTree(this.ctx, TILESHEET.getTreeForPos(x, y), screenPos.x, screenPos.y, isoProjection.tileW, isoProjection.tileH);
+            TILESHEET.drawTree(this.ctx, TILESHEET.getTreeForPos(x, y), screenPos.x, baseY, isoProjection.tileW, isoProjection.tileH);
           } else if (GameState.currentChapter === 3) {
-            // En el río los WALL son obstáculos: agua con rocas/troncos
             TILESHEET.drawForType(this.ctx, TileType.DARK, screenPos.x, screenPos.y, isoProjection.tileW, isoProjection.tileH, 3);
-            TILESHEET.drawTree(this.ctx, TILESHEET.getWaterObstacleForPos(x, y), screenPos.x, screenPos.y, isoProjection.tileW, isoProjection.tileH);
+            TILESHEET.drawTree(this.ctx, TILESHEET.getWaterObstacleForPos(x, y), screenPos.x, baseY, isoProjection.tileW, isoProjection.tileH);
           } else {
-            this.drawWall(screenPos.x, screenPos.y);
+            // Pasar baseY para que drawWall dibuje desde la base del tile hacia arriba
+            this.drawWall(screenPos.x, baseY);
           }
         }
 
-        // Interactables en esta celda
+        // ── Interactuables en esta celda ────────────────────────────────────
         for (const obj of interactables) {
           if (Math.floor(obj.y + 0.5) === y && Math.floor(obj.x + 0.5) === x) {
             const worldX = obj.x + 0.5, worldY = obj.y + 0.5;
@@ -190,10 +191,10 @@ class Renderer {
 
     if (player.char !== 'Lucas' || !player.flashlight) {
       // Sofía: niebla suave, sin linterna
-      const grad = this.ctx.createRadialGradient(px, py, innerR * 0.5, px, py, outerR);
+      const grad = this.ctx.createRadialGradient(px, py, innerR * 0.1, px, py, outerR * 0.35);
       grad.addColorStop(0,   'rgba(155, 89, 182, 0.02)');
-      grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
-      grad.addColorStop(1,   'rgba(0, 0, 0, 0.82)');
+      grad.addColorStop(0.3, 'rgba(0, 0, 0, 0.75)');
+      grad.addColorStop(1,   'rgba(0, 0, 0, 0.97)');
       this.ctx.fillStyle = grad;
       this.ctx.fillRect(0, 0, this.width, this.height);
       return;
@@ -203,11 +204,11 @@ class Renderer {
     const a = Math.atan2(player.facing.y, player.facing.x);
     const lx = px + Math.cos(a) * innerR * 0.5;
     const ly = py + Math.sin(a) * innerR * 0.25;
-    const lightR = screenDiag * 0.32;
-    const grad = this.ctx.createRadialGradient(lx, ly - innerR * 0.1, innerR * 0.3, lx, ly - innerR * 0.1, lightR);
-    grad.addColorStop(0,   'rgba(255, 255, 220, 0.13)');
-    grad.addColorStop(0.4, 'rgba(255, 255, 200, 0.05)');
-    grad.addColorStop(1,   'rgba(0, 0, 0, 0.88)');
+    const lightR = screenDiag * 0.08;
+    const grad = this.ctx.createRadialGradient(lx, ly - innerR * 0.1, innerR * 0.15, lx, ly - innerR * 0.1, lightR);
+    grad.addColorStop(0,   'rgba(255, 255, 220, 0.10)');
+    grad.addColorStop(0.35, 'rgba(255, 255, 200, 0.03)');
+    grad.addColorStop(1,   'rgba(0, 0, 0, 0.93)');
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, this.width, this.height);
   }
@@ -224,20 +225,20 @@ class Renderer {
   }
 
   drawWall(sx, sy) {
+    // sy = base del tile (screenPos.y + tileH/2), el muro crece hacia arriba desde aquí
     const tw = isoProjection.tileW;
     const th = isoProjection.tileH;
     const wallH = th * 2;
 
     // Intentar dibujar con textura
     if (TILESHEET.drawWall(this.ctx, sx, sy, tw, th)) {
-      // Tope con textura
       if (!TILESHEET.drawWallTop(this.ctx, sx, sy, tw, th)) {
         this.drawIsoDiamond(sx, sy - wallH, tw, th, CONFIG.TILE_COLORS.WALL.top, '#445566');
       }
       return;
     }
 
-    // Fallback colores sólidos
+    // Fallback colores sólidos — cara NW
     this.ctx.fillStyle = CONFIG.TILE_COLORS.WALL.fill;
     this.ctx.beginPath();
     this.ctx.moveTo(sx - tw / 2, sy);
@@ -246,6 +247,7 @@ class Renderer {
     this.ctx.lineTo(sx - tw / 2, sy - wallH);
     this.ctx.closePath();
     this.ctx.fill();
+    // Cara NE
     this.ctx.fillStyle = '#1e2d3a';
     this.ctx.beginPath();
     this.ctx.moveTo(sx,          sy + th / 2);
@@ -254,6 +256,7 @@ class Renderer {
     this.ctx.lineTo(sx,          sy + th / 2 - wallH);
     this.ctx.closePath();
     this.ctx.fill();
+    // Tope
     this.drawIsoDiamond(sx, sy - wallH, tw, th, CONFIG.TILE_COLORS.WALL.top, '#445566');
   }
 

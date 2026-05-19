@@ -170,13 +170,19 @@ function getTile(col, row) {
 
 function isWalkable(col, row) {
   const t = getTile(col, row);
-  
-  // En capítulo 3, las tiles DARK (agua) no son caminables, pero BRIDGE sí
-  if (GameState.currentChapter === 3 && t === TileType.DARK) {
-    return false;
-  }
-  
-  return t !== TileType.WALL && t !== TileType.UPPER;
+
+  if (t === TileType.WALL) return false;
+
+  // UPPER es zona decorativa no caminable (balcones/bordes del piso 1)
+  // pero solo bloqueamos si realmente es intransitable según el diseño del mapa
+  // UPPER se mantiene bloqueado para evitar que el jugador salga del área jugable
+  if (t === TileType.UPPER) return false;
+
+  // En cap 3, el agua (DARK) no es caminable; BRIDGE (6) sí lo es
+  const chapter = (typeof GameState !== 'undefined') ? GameState.currentChapter : 1;
+  if (chapter === 3 && t === TileType.DARK) return false;
+
+  return true;
 }
 
 function getStairAt(x, y, chapter, floor) {

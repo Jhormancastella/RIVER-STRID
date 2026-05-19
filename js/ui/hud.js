@@ -1,10 +1,35 @@
 const hud = {
-  charIndicator: null, sensBar: null, proximityIndicator: null, controlsInfo: null,
+  charIndicator: null, sensBar: null, proximityIndicator: null, controlsInfo: null, pauseBtn: null,
   init() {
     this.charIndicator = document.getElementById('char-indicator');
     this.sensBar = document.getElementById('sens-bar');
     this.proximityIndicator = document.getElementById('proximity-indicator');
     this.controlsInfo = document.getElementById('controls-info');
+    // ✅ Crear botón de pausa para móvil (se muestra en mobile, oculto en desktop por CSS)
+    this.createPauseButton();
+  },
+  
+  // Crear botón de pausa dinámico
+  createPauseButton() {
+    // Si ya existe, no duplicar
+    if (document.getElementById('pause-btn')) return;
+    
+    const btn = document.createElement('button');
+    btn.id = 'pause-btn';
+    btn.setAttribute('aria-label', 'Pausar juego');
+    btn.innerHTML = '⏸'; // Icono de pausa
+    btn.onclick = () => {
+      if (typeof window.PauseMenu !== 'undefined') {
+        window.PauseMenu.toggle();
+      }
+    };
+    
+    // Insertar en el contenedor del juego
+    const container = document.getElementById('game-container');
+    if (container) {
+      container.appendChild(btn);
+    }
+    this.pauseBtn = btn;
   },
   updateCharacterIndicator() {
     if (!this.charIndicator) return;
@@ -37,6 +62,7 @@ const hud = {
       if (joystickEl) joystickEl.style.display = 'none';
       if (touchCtrl) touchCtrl.style.display = 'none';
       if (this.controlsInfo) this.controlsInfo.style.display = 'block';
+      if (tutorial) tutorial.style.display = 'none';
     }
   }
 };

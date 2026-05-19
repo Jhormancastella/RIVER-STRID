@@ -1,23 +1,19 @@
 const collisionSystem = {
-  padding: 0.35, // Aumentado para evitar que el sprite se superponga visualmente a la base de los muros
+  padding: 0.25, // Reducido de 0.35 para evitar que el jugador se atasque en pasillos de 1 tile
 
-  // Verifica si una posición (centro del jugador) es válida
+  // Verifica si una posición es válida — solo centro + 4 esquinas (suficiente para hitbox cuadrado)
   canMoveTo(x, y) {
-    // Verificamos el centro + las 4 esquinas del hitbox
+    const p = this.padding;
     const points = [
-      { cx: x,                  cy: y                  }, // centro
-      { cx: x - this.padding,   cy: y - this.padding   }, // esquina TL
-      { cx: x + this.padding,   cy: y - this.padding   }, // esquina TR
-      { cx: x - this.padding,   cy: y + this.padding   }, // esquina BL
-      { cx: x + this.padding,   cy: y + this.padding   }, // esquina BR
-      { cx: x - this.padding,   cy: y                  }, // lado izq
-      { cx: x + this.padding,   cy: y                  }, // lado der
-      { cx: x,                  cy: y - this.padding   }, // lado top
-      { cx: x,                  cy: y + this.padding   }, // lado bot
+      { cx: x,     cy: y     }, // centro
+      { cx: x - p, cy: y - p }, // esquina TL
+      { cx: x + p, cy: y - p }, // esquina TR
+      { cx: x - p, cy: y + p }, // esquina BL
+      { cx: x + p, cy: y + p }, // esquina BR
     ];
-    for (const p of points) {
-      const gx = Math.floor(p.cx);
-      const gy = Math.floor(p.cy);
+    for (const pt of points) {
+      const gx = Math.floor(pt.cx);
+      const gy = Math.floor(pt.cy);
       if (gx < 0 || gx >= CONFIG.MAP.COLS || gy < 0 || gy >= CONFIG.MAP.ROWS) return false;
       if (!isWalkable(gx, gy)) return false;
     }

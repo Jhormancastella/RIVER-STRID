@@ -10,7 +10,8 @@ const GameState = {
   isMobile: false,
   isPaused: false,
   gameStarted: false,
-  currentChapter: 1
+  currentChapter: 1,
+  _stairCooldown: false
 };
 
 const TypewriterState = { interval: null, done: true, fullText: '' };

@@ -7,6 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <title>RIVER STRID</title>
 
+<link rel="stylesheet" href="css/main-menu.css">
+<link rel="stylesheet" href="css/pause-menu.css"> <!-- ✅ Menú de pausa -->
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600&display=swap');
 
@@ -377,6 +380,8 @@
   </div>
 
   <div id="char-indicator" class="lucas">👤 LUCAS</div>
+  <!-- ✅ Botón de pausa (visible en móvil, oculto en desktop por CSS) -->
+  <button id="pause-btn" aria-label="Pausar juego" title="Pausar (P)">⏸</button>
   <canvas id="minimap" width="80" height="80"></canvas>
 
   <div id="inventory">
@@ -456,6 +461,42 @@
 <script src="js/input/touch.js"></script>
 <script src="js/ui/hud.js"></script>
 <script src="js/ui/screens.js"></script>
+<script src="js/ui/pauseMenu.js"></script> <!-- ✅ Menú de pausa -->
 <script src="js/game/main.js"></script>
+
+<!-- Inicialización del menú principal con autenticación y opciones -->
+<script type="module">
+  import { MainMenu } from './js/ui/mainMenu.js';
+  import { SessionBridge } from './js/systems/sessionBridge.js';
+  import { CloudSave } from './js/systems/cloudSave.js';
+
+  // Exponer globalmente para compatibilidad con scripts existentes
+  window.SessionBridge = SessionBridge;
+  window.CloudSave = CloudSave;
+
+  // Inicializar menú principal cuando el DOM esté listo
+  (async function initMainMenu() {
+    try {
+      // Crear instancia del menú principal
+      const menu = new MainMenu();
+      window.mainMenu = menu; // Para acceso desde consola/debug
+
+      // Inicializar menú con referencia al GameState
+      await menu.init(window.GameState || {});
+
+      // Suscribirse a eventos de guardado para actualizar UI
+      if (window.GameState) {
+        SessionBridge.init(window.GameState);
+      }
+
+    } catch (err) {
+      console.error('[Menu] Error crítico al inicializar menú:', err);
+      // Fallback: intentar iniciar el juego directamente si el menú falla
+      if (typeof window.game?.init === 'function') {
+        await window.game.init();
+      }
+    }
+  })();
+</script>
 </body>
 </html>
